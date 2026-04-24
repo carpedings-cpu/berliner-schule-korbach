@@ -536,7 +536,7 @@ function savePos(pos) {
 }
 let ACT=DATA[0].pos, FPOS=null;
 
-function gs(p){if(!ST[p])ST[p]={g:false,m:false,a:false,sa:false,ea:false,ib:false,ew:false,fotos:[],note:''};return ST[p];}
+function gs(p){if(!ST[p])ST[p]={g:false,m:false,a:false,sa:false,ea:false,ib:false,ew:false,fotos:[],pdfs:[],note:''};return ST[p];}
 function ist(p){const s=gs(p);if(s.g||s.m||s.a||s.ib||s.ew||s.fotos.length||s.note){const n=[s.g,s.m,s.a,s.sa,s.ea,s.ib,s.ew].filter(Boolean).length;return n===7?'done':'part';}return 'open';}
 function sp(p){return p.replace(/\./g,'_');}
 
@@ -750,8 +750,8 @@ function df(pos,i){
   // Save updated fotos list to database
   saveFotos(pos);
   // Try to delete from Supabase Storage
-  if(url && (url.includes('/fotos/'))) {
-    const fname = url.split('/fotos/')[1].split('?')[0];
+  if(url && (url.includes('/Fotos/') || url.includes('/fotos/'))) {
+    const fname = url.split(/\/[Ff]otos\//)[1].split('?')[0];
     fetch(SB_URL+'/storage/v1/object/Fotos/'+fname, {
       method:'DELETE',
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
@@ -837,6 +837,8 @@ function restoreUI() {
     if(anm && s.note) { anm.value = s.note; autoR(anm); }
     // Restore fotos
     if(s.fotos && s.fotos.length) updFG(pos);
+    // Restore pdfs
+    if(s.pdfs && s.pdfs.length) updPG(pos);
     // Restore progress
     updProg(pos);
   });
@@ -1022,9 +1024,10 @@ function saveFotos(pos) {
     },
     body: JSON.stringify({
       pos: pos,
-      g: s.g, m: s.m, a: s.a, ib: s.ib, ew: s.ew,
+      g: s.g, m: s.m, a: s.a, sa: s.sa, ea: s.ea, ib: s.ib, ew: s.ew,
       note: s.note,
       fotos: JSON.stringify(s.fotos),
+      pdfs: JSON.stringify(s.pdfs || []),
       updated_at: new Date().toISOString()
     })
   }).catch(e => console.warn('Foto-URLs speichern fehlgeschlagen:', e));
@@ -1040,11 +1043,13 @@ async function loadState() {
     if (data) {
       data.forEach(row => {
         let fotos = [];
+        let pdfs = [];
         try { fotos = row.fotos ? JSON.parse(row.fotos) : []; } catch(e) {}
+        try { pdfs = row.pdfs ? JSON.parse(row.pdfs) : []; } catch(e) {}
         ST[row.pos] = {
           g: row.g||false, m: row.m||false, a: row.a||false,
           sa: row.sa||false, ea: row.ea||false, ib: row.ib||false, ew: row.ew||false,
-          note: row.note||'', fotos: fotos
+          note: row.note||'', fotos: fotos, pdfs: pdfs
         };
       });
     }
@@ -1164,6 +1169,7 @@ document.getElementById('pi').addEventListener('change',async function(e){
       if(!gs(PPOS).pdfs) gs(PPOS).pdfs=[];
       gs(PPOS).pdfs.push({type:PTYPE,url,name:file.name});
       updPG(PPOS);
+      savePdfs(PPOS);
       hideLoader();
       alert(PTYPE+' erfolgreich hochgeladen!');
     } catch(err){
@@ -1177,7 +1183,47 @@ function updPG(pos){
   const s=gs(pos);
   const g=document.getElementById('PG'+id);
   if(!g||!s.pdfs) return;
-  g.innerHTML=s.pdfs.map((p,i)=>`<div class="pdoc">&#128196; <a href="${p.url}" target="_blank">${p.type}: ${p.name}</a></div>`).join('');
+  g.innerHTML=s.pdfs.map((p,i)=>`<div class="pdoc">&#128196; <a href="${p.url}" target="_blank">${p.type}: ${p.name}</a><button class="pdoc-del" onclick="delPdf('${pos}',${i})" title="Löschen">&#10005;</button></div>`).join('');
+}
+
+function delPdf(pos,i){
+  const s=gs(pos);
+  if(!s.pdfs||!s.pdfs[i])return;
+  if(!confirm('Protokoll wirklich löschen?'))return;
+  const doc=s.pdfs[i];
+  // Remove from Supabase Storage
+  if(doc.url&&doc.url.includes('/Fotos/')){
+    const fname=doc.url.split('/Fotos/')[1].split('?')[0];
+    fetch(SB_URL+'/storage/v1/object/Fotos/'+fname,{
+      method:'DELETE',
+      headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
+    }).catch(e=>console.warn('Protokoll Storage löschen fehlgeschlagen:',e));
+  }
+  // Remove from state
+  s.pdfs.splice(i,1);
+  updPG(pos);
+  savePdfs(pos);
+}
+
+function savePdfs(pos){
+  const s=gs(pos);
+  fetch(SB_URL+'/rest/v1/positionen_korbach_berliner_schule?on_conflict=pos',{
+    method:'POST',
+    headers:{
+      'apikey':SB_KEY,
+      'Authorization':'Bearer '+SB_KEY,
+      'Content-Type':'application/json',
+      'Prefer':'resolution=merge-duplicates,return=minimal'
+    },
+    body:JSON.stringify({
+      pos:pos,
+      g:s.g,m:s.m,a:s.a,sa:s.sa,ea:s.ea,ib:s.ib,ew:s.ew,
+      note:s.note,
+      fotos:JSON.stringify(s.fotos||[]),
+      pdfs:JSON.stringify(s.pdfs||[]),
+      updated_at:new Date().toISOString()
+    })
+  }).catch(e=>console.warn('PDFs speichern fehlgeschlagen:',e));
 }
 
 // INIT
