@@ -684,7 +684,7 @@ document.getElementById('fi').addEventListener('change',async function(e){
     const controller = new AbortController();
     const timeout = setTimeout(() => controller.abort(), 60000);
     
-    const res = await fetch(SB_URL+'/storage/v1/object/fotos/'+fname, {
+    const res = await fetch(SB_URL+'/storage/v1/object/Fotos/'+fname, {
       method:'POST',
       headers:{
         'apikey':SB_KEY,
@@ -700,7 +700,7 @@ document.getElementById('fi').addEventListener('change',async function(e){
       const errText = await res.text();
       throw new Error(errText);
     }
-    const publicUrl = SB_URL+'/storage/v1/object/public/fotos/'+fname;
+    const publicUrl = SB_URL+'/storage/v1/object/public/Fotos/'+fname;
     gs(FPOS).fotos.push(publicUrl);
     saveFotos(FPOS);
     updFG(FPOS);rc(FPOS);upStats();
@@ -750,9 +750,9 @@ function df(pos,i){
   // Save updated fotos list to database
   saveFotos(pos);
   // Try to delete from Supabase Storage
-  if(url && (url.includes('/fotos/'))) {
-    const fname = url.split('/fotos/')[1].split('?')[0];
-    fetch(SB_URL+'/storage/v1/object/fotos/'+fname, {
+  if(url && (url.includes('/Fotos/') || url.includes('/fotos/'))) {
+    const fname = url.split(/\/[Ff]otos\//)[1].split('?')[0];
+    fetch(SB_URL+'/storage/v1/object/Fotos/'+fname, {
       method:'DELETE',
       headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY}
     }).catch(e => console.warn('Foto löschen fehlgeschlagen:', e));
@@ -1154,13 +1154,13 @@ document.getElementById('pi').addEventListener('change',async function(e){
     try {
       const ext=file.name.split('.').pop();
       const fname=PPOS.replace(/\./g,'_')+'_'+PTYPE.replace(/ /g,'_')+'_'+Date.now()+'.'+ext;
-      const res=await fetch(SB_URL+'/storage/v1/object/fotos/'+fname,{
+      const res=await fetch(SB_URL+'/storage/v1/object/Fotos/'+fname,{
         method:'POST',
         headers:{'apikey':SB_KEY,'Authorization':'Bearer '+SB_KEY,'Content-Type':file.type||'application/pdf','x-upsert':'true'},
         body:file
       });
       if(!res.ok) throw new Error(await res.text());
-      const url=SB_URL+'/storage/v1/object/public/fotos/'+fname;
+      const url=SB_URL+'/storage/v1/object/public/Fotos/'+fname;
       // Save to ST
       if(!gs(PPOS).pdfs) gs(PPOS).pdfs=[];
       gs(PPOS).pdfs.push({type:PTYPE,url,name:file.name});
