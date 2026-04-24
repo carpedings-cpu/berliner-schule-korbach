@@ -536,7 +536,7 @@ function savePos(pos) {
 }
 let ACT=DATA[0].pos, FPOS=null;
 
-function gs(p){if(!ST[p])ST[p]={g:false,m:false,a:false,sa:false,ea:false,ib:false,ew:false,fotos:[],note:''};return ST[p];}
+function gs(p){if(!ST[p])ST[p]={g:false,m:false,a:false,sa:false,ea:false,ib:false,ew:false,fotos:[],pdfs:[],note:''};return ST[p];}
 function ist(p){const s=gs(p);if(s.g||s.m||s.a||s.ib||s.ew||s.fotos.length||s.note){const n=[s.g,s.m,s.a,s.sa,s.ea,s.ib,s.ew].filter(Boolean).length;return n===7?'done':'part';}return 'open';}
 function sp(p){return p.replace(/\./g,'_');}
 
@@ -1022,9 +1022,10 @@ function saveFotos(pos) {
     },
     body: JSON.stringify({
       pos: pos,
-      g: s.g, m: s.m, a: s.a, ib: s.ib, ew: s.ew,
+      g: s.g, m: s.m, a: s.a, sa: s.sa, ea: s.ea, ib: s.ib, ew: s.ew,
       note: s.note,
       fotos: JSON.stringify(s.fotos),
+      pdfs: JSON.stringify(s.pdfs || []),
       updated_at: new Date().toISOString()
     })
   }).catch(e => console.warn('Foto-URLs speichern fehlgeschlagen:', e));
