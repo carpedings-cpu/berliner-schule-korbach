@@ -700,7 +700,7 @@ document.getElementById('fi').addEventListener('change',async function(e){
       const errText = await res.text();
       throw new Error(errText);
     }
-    const publicUrl = SB_URL+'/storage/v1/object/public/fotos/'+fname;
+    const publicUrl = SB_URL+'/storage/v1/object/public/Fotos/'+fname;
     gs(FPOS).fotos.push(publicUrl);
     saveFotos(FPOS);
     updFG(FPOS);rc(FPOS);upStats();
@@ -1159,7 +1159,7 @@ document.getElementById('pi').addEventListener('change',async function(e){
         body:file
       });
       if(!res.ok) throw new Error(await res.text());
-      const url=SB_URL+'/storage/v1/object/public/fotos/'+fname;
+      const url=SB_URL+'/storage/v1/object/public/Fotos/'+fname;
       // Save to ST
       if(!gs(PPOS).pdfs) gs(PPOS).pdfs=[];
       gs(PPOS).pdfs.push({type:PTYPE,url,name:file.name});
